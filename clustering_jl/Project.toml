@@ -1,0 +1,4 @@
+name = "clustering_jl"
+uuid = "8f40c6e7-9c44-42a6-8a21-cf4c6dffcace"
+authors = ["ZVerdup <evan.m.c.kias@gmail.com>"]
+version = "0.1.0"
