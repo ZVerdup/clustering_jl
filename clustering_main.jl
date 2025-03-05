@@ -278,11 +278,53 @@ println("Performing PCA...")
 # println(pca_model.principalvars / sum(pca_model.principalvars))
 function perform_pca(df::DataFrame, num_components::Int)
     matrix = Matrix(df[:,2:end])  # Convert DataFrame to a matrix
-    pca_model = fit(PCA, matrix; maxoutdim=size(Maxtrix(2)))  # Fit PCA model
+    pca_model = fit(PCA, matrix; maxoutdim=size(matrix,2))  # Fit PCA model
     transformed_data = predict(pca_model, matrix)  # Transform data
     return DataFrame(transformed_data', :auto)  # Convert back to DataFrame
 end
 
+function perform_pca(df::DataFrame)
+    data = Matrix(df[:,2:end])'  # Convert DataFrame to a matrix
+    pca_model = fit(PCA, data; maxoutdim=size(data,2))  # Fit PCA model
+    explained_variance = pca_model.prinvars ./ sum(pca_model.prinvars)  # Calculate explained variance
+    return explained_variance
+end
+
+function elbow_analysis(data::DataFrame)
+    explained_variance = perform_pca(data)
+    cumulative_variance = cumsum(explained_variance)
+    num_components = 1:length(cumulative_variance)
+    
+    fig = Figure(size = (800, 600))
+    ax = Axis(fig[1, 1], 
+        title = "Elbow Analysis", 
+        xlabel = "Number of Components", 
+        ylabel = "Cumulative Explained Variance"
+    )
+    
+    lines!(ax, num_components, explained_variance, label = "Explained Variance")
+    CairoMakie.scatter!(ax, num_components, explained_variance, color = :blue)
+    
+    # Add reference line at 90% explained variance (optional)
+    hlines!(ax, [0.1], linestyle = :dash, color = :red, label = "90% Variance")
+    
+    axislegend(ax, position = :rt)
+    save("elbow_analysis.png", fig)
+    fig
+end
+
+# Perform PCA and plot elbow analysis
+println("Performing PCA and plotting elbow analysis...")
+elbow_analysis(zscored_log_data_df)
+println("Saved elbow analysis figure")
+println("Input a number of principal components to use for clustering...")
+num_pcs = readline()  # Wait for user input to continue
+println("User entered ", num_pcs, " principal components.")
+num_pcs = parse(Int64, num_pcs)  # Convert the input to an integer
+data = Matrix(zscored_log_data_df[:,2:end])'  # Convert DataFrame to a matrix
+pca_model = fit(PCA, data; maxoutdim=num_pcs)  # Fit PCA model
+pca_data = reconstruct(fit(pca_model,data),data)  # Transform data
+pca_data_df = DataFrame(pca_data', :auto)  # Convert back to DataFrame
 # # Perform Hierarchical Clustering
 # println("Performing Hierarchical Clustering...")
 # hc_model = hclust(pca_data, linkage=:ward)
